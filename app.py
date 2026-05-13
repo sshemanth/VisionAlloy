@@ -62,11 +62,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-MODEL_PATHS = {
-    "YOLOv8n": "yolov8n_best.pt",
-    "YOLOv8s": "best.pt",
-    "YOLOv8m": "yolov8m_best.pt"
-}
+MODEL_PATHS = "YOLOv8s.pt"
 
 MODEL_RESULTS = pd.DataFrame({
     "Model": ["YOLOv8n", "YOLOv8s", "YOLOv8m"],
@@ -97,10 +93,7 @@ def load_model(path):
 
 st.sidebar.title("⚙️ Control Panel")
 
-model_choice = st.sidebar.selectbox(
-    "Select Detection Model",
-    ["YOLOv8s", "YOLOv8n", "YOLOv8m"]
-)
+st.sidebar.success("Model Loaded: YOLOv8s")
 
 confidence_threshold = st.sidebar.slider(
     "Confidence Threshold",
@@ -125,7 +118,7 @@ st.sidebar.write(f"Selected model: **{model_choice}**")
 st.sidebar.write("Task: **Object Detection**")
 st.sidebar.write("Image size: **640 × 640**")
 
-model_path = MODEL_PATHS[model_choice]
+model = load_model(MODEL_PATH)
 
 if not os.path.exists(model_path):
     st.error(f"Model file not found: {model_path}")
@@ -183,7 +176,7 @@ def run_detection(image, file_name="uploaded_image"):
     st.session_state.history.append({
         "Time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "Image": file_name,
-        "Model": model_choice,
+        "Model": "YOLOv8s",
         "Decision": decision,
         "Defects": len(rows),
         "Inference Time": round(inference_time, 3)
@@ -335,7 +328,7 @@ with tab3:
     best_row = MODEL_RESULTS.loc[MODEL_RESULTS["Test Accuracy"].idxmax()]
 
     st.success(
-        f"Best model: {best_row['Model']} with test accuracy of {best_row['Test Accuracy']}%."
+        Best model: YOLOv8s with test accuracy of {best_row['Test Accuracy']}%."
     )
 
 with tab4:
