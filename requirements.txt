@@ -3,3 +3,5 @@ ultralytics
 pillow
 pandas
 opencv-python-headless
+torch
+torchvision
