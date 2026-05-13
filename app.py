@@ -328,7 +328,7 @@ with tab3:
     best_row = MODEL_RESULTS.loc[MODEL_RESULTS["Test Accuracy"].idxmax()]
 
     st.success(
-        Best model: YOLOv8s with test accuracy of {best_row['Test Accuracy']}%."
+        f"Best model: YOLOv8s with test accuracy of {best_row['Test Accuracy']}%."
     )
 
 with tab4:
