@@ -354,3 +354,26 @@ st.markdown(
     '<div class="footer">VisionAlloy | Automated Surface Defect Detection System</div>',
     unsafe_allow_html=True
 )
+
+import base64
+
+def set_background(image_file):
+    with open(image_file, "rb") as file:
+        encoded = base64.b64encode(file.read()).decode()
+
+    st.markdown(
+        f"""
+        <style>
+        .stApp {{
+            background-image: linear-gradient(rgba(255,255,255,0.88), rgba(255,255,255,0.88)),
+                              url("data:image/png;base64,{encoded}");
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }}
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
+set_background("background.png")
