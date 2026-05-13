@@ -292,29 +292,3 @@ Potential future improvements include:
 VisionAlloy successfully demonstrates the effectiveness of deep learning-based object detection for industrial steel surface inspection. The YOLOv8-based system achieved strong detection performance while providing an easy-to-use graphical interface for real-time defect inspection.
 
 The project highlights how AI and computer vision can improve industrial quality assurance processes by reducing manual inspection effort and increasing defect detection consistency.
-
----
-
-# Authors
-
-## VisionAlloy Team
-
-* Sri Sai Hemanth Bollepalli
-* Meet Jobanputra
-* Harshitha Kolgatta Swamy
-
----
-
-# License
-
-This project was developed for academic and educational purposes.
-
----
-
-# Acknowledgements
-
-* Ultralytics YOLOv8
-* AWS SageMaker
-* Streamlit
-* NEU Surface Defect Dataset
-* Roboflow
