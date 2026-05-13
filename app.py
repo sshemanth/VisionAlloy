@@ -114,7 +114,7 @@ show_defect_info = st.sidebar.checkbox("Show Defect Descriptions", value=True)
 st.sidebar.markdown("---")
 st.sidebar.subheader("System Status")
 st.sidebar.success("Model system ready")
-st.sidebar.write(f"Selected model: **{model_choice}**")
+st.sidebar.write("Selected model: **YOLOv8s**")
 st.sidebar.write("Task: **Object Detection**")
 st.sidebar.write("Image size: **640 × 640**")
 
