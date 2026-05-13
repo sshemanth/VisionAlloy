@@ -120,8 +120,8 @@ st.sidebar.write("Image size: **640 × 640**")
 
 model = load_model(MODEL_PATH)
 
-if not os.path.exists(model_path):
-    st.error(f"Model file not found: {model_path}")
+if not os.path.exists(MODEL_PATH):
+    st.error(f"Model file not found: {MODEL_PATH}")
     st.stop()
 
 model = load_model(model_path)
