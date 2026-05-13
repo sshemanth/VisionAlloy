@@ -16,59 +16,39 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-.main-title {
-    font-size: 42px;
-    font-weight: 900;
-    color: #0f172a;
-}
-.subtitle {
-    font-size: 18px;
-    color: #475569;
-}
-.card {
-    background-color: #f8fafc;
-    padding: 18px;
-    border-radius: 16px;
-    border: 1px solid #e2e8f0;
-}
+.main-title {font-size: 42px; font-weight: 900; color: #0f172a;}
+.subtitle {font-size: 18px; color: #475569;}
 .pass-box {
-    background-color: #dcfce7;
-    color: #166534;
-    padding: 18px;
-    border-radius: 14px;
-    font-size: 20px;
-    font-weight: 800;
+    background-color: #dcfce7; color: #166534; padding: 18px;
+    border-radius: 14px; font-size: 20px; font-weight: 800;
 }
 .reject-box {
-    background-color: #fee2e2;
-    color: #991b1b;
-    padding: 18px;
-    border-radius: 14px;
-    font-size: 20px;
-    font-weight: 800;
+    background-color: #fee2e2; color: #991b1b; padding: 18px;
+    border-radius: 14px; font-size: 20px; font-weight: 800;
 }
 .footer {
-    text-align: center;
-    color: #64748b;
-    font-size: 13px;
-    margin-top: 40px;
+    text-align: center; color: #64748b; font-size: 13px; margin-top: 40px;
 }
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown('<div class="main-title">🔍 VisionAlloy Surface Defect Detection</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="subtitle">AI-powered steel surface inspection using YOLOv8 object detection</div>',
+    '<div class="main-title">🔍 VisionAlloy Surface Defect Detection</div>',
     unsafe_allow_html=True
 )
 
-MODEL_PATH = "YOLOv8s.pt"
+st.markdown(
+    '<div class="subtitle">AI-powered steel surface inspection using YOLOv8s object detection</div>',
+    unsafe_allow_html=True
+)
+
+MODEL_PATH = "best.pt"
 
 MODEL_RESULTS = pd.DataFrame({
-    "Model": ["YOLOv8n", "YOLOv8s", "YOLOv8m"],
-    "Train Accuracy": [67.90, 87.40, 78.85],
-    "Validation Accuracy": [67.68, 84.58, 77.84],
-    "Test Accuracy": [66.26, 87.56, 78.71]
+    "Model": ["YOLOv8s"],
+    "Train Accuracy": [87.40],
+    "Validation Accuracy": [84.58],
+    "Test Accuracy": [87.56]
 })
 
 DEFECT_DESCRIPTIONS = {
@@ -92,7 +72,6 @@ def load_model(path):
     return YOLO(path)
 
 st.sidebar.title("⚙️ Control Panel")
-
 st.sidebar.success("Model Loaded: YOLOv8s")
 
 confidence_threshold = st.sidebar.slider(
@@ -118,13 +97,11 @@ st.sidebar.write("Selected model: **YOLOv8s**")
 st.sidebar.write("Task: **Object Detection**")
 st.sidebar.write("Image size: **640 × 640**")
 
-model = load_model(MODEL_PATH)
-
 if not os.path.exists(MODEL_PATH):
     st.error(f"Model file not found: {MODEL_PATH}")
     st.stop()
 
-model = load_model(model_path)
+model = load_model(MODEL_PATH)
 
 if "history" not in st.session_state:
     st.session_state.history = []
@@ -170,7 +147,6 @@ def run_detection(image, file_name="uploaded_image"):
         })
 
     table = pd.DataFrame(rows)
-
     decision = "PASS" if len(rows) == 0 else "REJECT"
 
     st.session_state.history.append({
@@ -219,7 +195,6 @@ with tab1:
         st.markdown("---")
 
         c1, c2, c3, c4 = st.columns(4)
-
         c1.metric("Decision", decision)
         c2.metric("Detected Defects", len(table))
         c3.metric("Inference Time", f"{inference_time:.2f}s")
@@ -288,7 +263,7 @@ with tab2:
 
         for file in batch_files:
             image = Image.open(file).convert("RGB")
-            output_image, table, decision, inference_time, _ = run_detection(image, file.name)
+            _, table, decision, inference_time, _ = run_detection(image, file.name)
 
             batch_results.append({
                 "Image": file.name,
@@ -322,14 +297,10 @@ with tab3:
 
     st.dataframe(MODEL_RESULTS, use_container_width=True)
 
-    st.markdown("### Accuracy Comparison")
+    st.markdown("### Accuracy Summary")
     st.bar_chart(MODEL_RESULTS.set_index("Model"))
 
-    best_row = MODEL_RESULTS.loc[MODEL_RESULTS["Test Accuracy"].idxmax()]
-
-    st.success(
-        f"Best model: YOLOv8s with test accuracy of {best_row['Test Accuracy']}%."
-    )
+    st.success("Best model: YOLOv8s with test accuracy of 87.56%.")
 
 with tab4:
     st.subheader("Inspection History")
@@ -355,24 +326,24 @@ with tab5:
 
     st.markdown("""
     VisionAlloy is an automated surface defect inspection system developed using
-    YOLOv8 object detection. The system detects six steel surface defect classes:
-    
+    YOLOv8s object detection. The system detects six steel surface defect classes:
+
     - Crazing
     - Inclusion
     - Patches
     - Pitted Surface
     - Rolled-in Scale
     - Scratches
-    
+
     The GUI supports single-image inspection, camera input, batch inspection,
-    model performance comparison, confidence threshold control, defect severity
-    analysis, and downloadable inspection reports.
+    confidence threshold control, defect severity analysis, and downloadable
+    inspection reports.
     """)
 
     st.markdown("### System Workflow")
     st.write("""
     1. User uploads or captures an image  
-    2. YOLOv8 model performs defect detection  
+    2. YOLOv8s model performs defect detection  
     3. Bounding boxes are generated  
     4. Defect class and confidence score are displayed  
     5. PASS/REJECT decision is produced  
