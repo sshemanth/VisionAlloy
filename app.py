@@ -62,7 +62,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-MODEL_PATHS = "YOLOv8s.pt"
+MODEL_PATH = "YOLOv8s.pt"
 
 MODEL_RESULTS = pd.DataFrame({
     "Model": ["YOLOv8n", "YOLOv8s", "YOLOv8m"],
