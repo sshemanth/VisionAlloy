@@ -358,19 +358,80 @@ st.markdown(
 import base64
 
 def set_background(image_file):
-    with open(image_file, "rb") as file:
-        encoded = base64.b64encode(file.read()).decode()
+    with open(image_file, "rb") as image:
+        encoded = base64.b64encode(image.read()).decode()
 
     st.markdown(
         f"""
         <style>
+
         .stApp {{
-            background-image: linear-gradient(rgba(255,255,255,0.88), rgba(255,255,255,0.88)),
-                              url("data:image/png;base64,{encoded}");
+            background:
+                linear-gradient(
+                    rgba(10,15,25,0.72),
+                    rgba(10,15,25,0.72)
+                ),
+                url("data:image/png;base64,{encoded}");
+
             background-size: cover;
             background-position: center;
+            background-repeat: no-repeat;
             background-attachment: fixed;
         }}
+
+        .main-title {{
+            color: white !important;
+            font-size: 54px !important;
+            font-weight: 900 !important;
+        }}
+
+        .subtitle {{
+            color: #e2e8f0 !important;
+            font-size: 22px !important;
+        }}
+
+        h1, h2, h3, h4, h5, h6 {{
+            color: white !important;
+        }}
+
+        p, label, div {{
+            color: #f1f5f9;
+        }}
+
+        section[data-testid="stSidebar"] {{
+            background-color: rgba(15,23,42,0.92);
+        }}
+
+        section[data-testid="stSidebar"] * {{
+            color: white !important;
+        }}
+
+        div[data-testid="stFileUploader"] {{
+            background-color: rgba(255,255,255,0.08);
+            border-radius: 18px;
+            padding: 15px;
+        }}
+
+        div[data-testid="metric-container"] {{
+            background-color: rgba(255,255,255,0.08);
+            border-radius: 15px;
+            padding: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }}
+
+        .stTabs [data-baseweb="tab"] {{
+            font-size: 18px;
+            color: white;
+        }}
+
+        footer {{
+            visibility: hidden;
+        }}
+
+        header {{
+            background: transparent !important;
+        }}
+
         </style>
         """,
         unsafe_allow_html=True
