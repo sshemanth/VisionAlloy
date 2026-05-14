@@ -354,5 +354,3 @@ st.markdown(
     '<div class="footer">VisionAlloy | Automated Surface Defect Detection System</div>',
     unsafe_allow_html=True
 )
-
-add_hero_banner("bg.png")
