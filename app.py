@@ -973,7 +973,7 @@ with tab1:
 
 with tab2:
     st.markdown("<div class='panel'><div class='panel-title'>Real-Time Video Inspection</div>", unsafe_allow_html=True)
-    st.write("Upload an MP4/AVI/MOV file to simulate production-line inspection. The app samples frames to keep Streamlit Cloud stable.")
+    st.write("Upload an MP4/AVI/MOV file. The app will process frames and display live YOLO bounding boxes during inspection.")
 
     video_file = st.file_uploader(
         "Upload inspection video",
@@ -982,8 +982,9 @@ with tab2:
         key="video_inspection_upload"
     )
 
-    frame_step = st.slider("Process every Nth frame", 5, 60, 15, 5)
-    max_frames = st.slider("Maximum processed frames", 5, 80, 25, 5)
+    frame_step = st.slider("Process every Nth frame", 1, 60, 5, 1)
+    max_frames = st.slider("Maximum processed frames", 5, 150, 50, 5)
+    video_confidence = st.slider("Video Confidence Threshold", 0.05, 0.90, 0.10, 0.05)
 
     if video_file is not None:
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
@@ -994,38 +995,92 @@ with tab2:
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) if cap.isOpened() else 0
         fps = cap.get(cv2.CAP_PROP_FPS) if cap.isOpened() else 0
 
-        st.video(video_file)
         st.write(f"Video frames: **{total_frames}** | FPS: **{fps:.2f}**")
+        st.info("For live defect display, the app shows the processed YOLO frames below instead of the raw uploaded video.")
 
-        if st.button("Run Video Inspection", use_container_width=True):
+        run_video = st.button("Run Live Video Inspection", use_container_width=True)
+
+        live_frame_box = st.empty()
+        live_status_box = st.empty()
+        progress = st.progress(0)
+
+        if run_video:
             summaries = []
             preview_images = []
             processed = 0
             frame_idx = 0
-            progress = st.progress(0)
+            start_video_time = time.time()
 
             while cap.isOpened() and processed < max_frames:
                 ok, frame = cap.read()
+
                 if not ok:
                     break
 
                 if frame_idx % frame_step == 0:
-                    plotted, count, avg_conf, primary, decision = predict_frame(frame, confidence_threshold)
+                    # Resize every sampled frame to the same scale used during YOLO training.
+                    frame_resized = cv2.resize(frame, (640, 640))
+
+                    # Run YOLO prediction with a lower threshold for video because motion blur can reduce confidence.
+                    results = model.predict(
+                        source=frame_resized,
+                        conf=video_confidence,
+                        save=False,
+                        verbose=False
+                    )
+
+                    # This is the important line: display the YOLO annotated frame, not the original frame.
+                    annotated_frame = results[0].plot()
+                    boxes = results[0].boxes
+                    defect_count = len(boxes)
+
+                    if defect_count > 0:
+                        confs = [float(b.conf[0]) for b in boxes]
+                        avg_conf = float(np.mean(confs))
+                        best_box = boxes[int(np.argmax(confs))]
+                        primary_defect = fmt_name(model.names[int(best_box.cls[0])])
+                    else:
+                        avg_conf = 0.0
+                        primary_defect = "None"
+
+                    frame_decision = "PASS" if defect_count == 0 else "REJECT" if defect_count >= 2 or avg_conf >= 0.70 else "REVIEW"
+
                     summaries.append({
                         "Frame": frame_idx,
-                        "Decision": decision,
-                        "Defects": count,
+                        "Decision": frame_decision,
+                        "Defects": defect_count,
                         "Avg Confidence": round(avg_conf, 3),
-                        "Primary Defect": primary
+                        "Primary Defect": primary_defect
                     })
-                    if len(preview_images) < 4:
-                        preview_images.append(cv2.cvtColor(plotted, cv2.COLOR_BGR2RGB))
+
+                    # Display live annotated frame in RGB format for Streamlit.
+                    live_frame_box.image(
+                        cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB),
+                        caption=f"Live YOLO Detection | Frame {frame_idx} | {frame_decision} | Defects: {defect_count}",
+                        use_container_width=True
+                    )
+
+                    live_status_box.markdown(
+                        f"""
+                        <div class='metric-card'>
+                            <div class='metric-label'>Live Video Status</div>
+                            <div class='metric-value'>{frame_decision}</div>
+                            <div class='metric-foot'>Frame {frame_idx} | Defects: {defect_count} | Avg confidence: {avg_conf:.2f}</div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+
+                    if len(preview_images) < 8:
+                        preview_images.append(cv2.cvtColor(annotated_frame, cv2.COLOR_BGR2RGB))
+
                     processed += 1
                     progress.progress(min(1.0, processed / max_frames))
 
                 frame_idx += 1
 
             cap.release()
+
             try:
                 os.remove(video_path)
             except OSError:
@@ -1036,30 +1091,33 @@ with tab2:
                 reject_rate = video_df["Decision"].eq("REJECT").mean() * 100
                 review_rate = video_df["Decision"].eq("REVIEW").mean() * 100
                 avg_defects = video_df["Defects"].mean()
+                runtime = time.time() - start_video_time
 
                 v1, v2, v3, v4 = st.columns(4)
                 v1.metric("Processed Frames", len(video_df))
                 v2.metric("Reject Rate", f"{reject_rate:.1f}%")
                 v3.metric("Review Rate", f"{review_rate:.1f}%")
-                v4.metric("Avg Defects/Frame", f"{avg_defects:.2f}")
+                v4.metric("Runtime", f"{runtime:.2f}s")
 
                 st.dataframe(video_df, use_container_width=True, hide_index=True)
 
                 c1, c2 = st.columns(2)
+
                 with c1:
                     st.markdown("### Frame Decision Distribution")
                     decision_counts = video_df["Decision"].value_counts().reset_index()
                     decision_counts.columns = ["Decision", "Count"]
                     st.bar_chart(decision_counts.set_index("Decision"), use_container_width=True)
+
                 with c2:
-                    st.markdown("### Defects Across Sampled Frames")
+                    st.markdown("### Defects Across Processed Frames")
                     st.line_chart(video_df.set_index("Frame")[["Defects"]], use_container_width=True)
 
-                st.markdown("### Sample Annotated Frames")
+                st.markdown("### Annotated Frame Samples")
                 cols = st.columns(min(4, len(preview_images)))
                 for i, img in enumerate(preview_images):
                     with cols[i % len(cols)]:
-                        st.image(img, caption=f"Sample {i+1}", use_container_width=True)
+                        st.image(img, caption=f"Detected sample {i + 1}", use_container_width=True)
 
                 csv_buffer = io.StringIO()
                 video_df.to_csv(csv_buffer, index=False)
@@ -1071,7 +1129,8 @@ with tab2:
                     use_container_width=True
                 )
             else:
-                st.warning("No frames were processed. Try a shorter video or lower the frame step.")
+                st.warning("No frames were processed. Try reducing the frame step or using a shorter video.")
+
         else:
             cap.release()
             try:
