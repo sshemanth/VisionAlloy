@@ -8,6 +8,9 @@ import time
 from datetime import datetime
 import io
 import numpy as np
+import cv2
+import wave
+import math
 
 st.set_page_config(
     page_title="VisionAlloy | Automated Inspection Dashboard",
@@ -456,6 +459,152 @@ def create_pdf_report(inspection_id, file_name, decision, quality_score, risk_le
     return pdf_buffer.getvalue()
 
 
+
+
+def create_region_heatmap(image: Image.Image, table: pd.DataFrame) -> Image.Image:
+    """Create a practical explainability heatmap from detected bounding-box regions."""
+    base = image.convert("RGB").resize(image.size)
+    overlay = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(overlay)
+
+    if table.empty:
+        return base
+
+    for _, row in table.iterrows():
+        try:
+            x1, y1, x2, y2 = int(row["X1"]), int(row["Y1"]), int(row["X2"]), int(row["Y2"])
+            conf = float(row["Confidence"])
+        except Exception:
+            continue
+
+        alpha = int(70 + min(150, conf * 150))
+        draw.rectangle((x1, y1, x2, y2), fill=(239, 68, 68, alpha), outline=(255, 255, 255, 220), width=3)
+
+        # Draw a soft outer region to visually show model focus around the predicted area.
+        pad_x = max(8, int((x2 - x1) * 0.18))
+        pad_y = max(8, int((y2 - y1) * 0.18))
+        draw.rectangle(
+            (max(0, x1 - pad_x), max(0, y1 - pad_y), min(base.width, x2 + pad_x), min(base.height, y2 + pad_y)),
+            outline=(56, 189, 248, 160),
+            width=2
+        )
+
+    blended = Image.alpha_composite(base.convert("RGBA"), overlay).convert("RGB")
+    return blended
+
+
+def create_defect_location_map(table: pd.DataFrame, width: int = 640, height: int = 640) -> Image.Image:
+    """Create a normalized factory defect-location heatmap."""
+    canvas = Image.new("RGB", (width, height), (7, 17, 31))
+    draw = ImageDraw.Draw(canvas, "RGBA")
+
+    # grid
+    for x in range(0, width, 80):
+        draw.line((x, 0, x, height), fill=(90, 180, 255, 45), width=1)
+    for y in range(0, height, 80):
+        draw.line((0, y, width, y), fill=(90, 180, 255, 45), width=1)
+
+    if table.empty:
+        draw.text((30, 30), "No defect regions detected", fill=(220, 242, 254))
+        return canvas
+
+    for _, row in table.iterrows():
+        try:
+            cx = int((int(row["X1"]) + int(row["X2"])) / 2)
+            cy = int((int(row["Y1"]) + int(row["Y2"])) / 2)
+            conf = float(row["Confidence"])
+        except Exception:
+            continue
+        radius = int(25 + conf * 45)
+        draw.ellipse((cx-radius, cy-radius, cx+radius, cy+radius), fill=(239, 68, 68, 90), outline=(248, 113, 113, 180), width=3)
+        draw.ellipse((cx-8, cy-8, cx+8, cy+8), fill=(255, 255, 255, 220))
+
+    draw.text((24, 24), "Defect Location Heatmap", fill=(224, 242, 254))
+    return canvas
+
+
+def generate_predictive_maintenance_insight(history_df: pd.DataFrame) -> str:
+    if history_df.empty or "Primary Defect" not in history_df.columns:
+        return "No maintenance pattern is available yet. Run more inspections to build a trend."
+
+    valid = history_df[history_df["Primary Defect"] != "None"]
+    if valid.empty:
+        return "Current inspection history does not show repeated defect patterns. Machine condition appears stable from available samples."
+
+    top_defect = valid["Primary Defect"].value_counts().idxmax()
+    top_count = int(valid["Primary Defect"].value_counts().max())
+    reject_rate = history_df["Decision"].eq("REJECT").mean() * 100 if "Decision" in history_df.columns else 0
+
+    mapping = {
+        "Scratches": "Repeated scratches may indicate conveyor contact, rough handling, or surface friction during transfer.",
+        "Rolled-in Scale": "Repeated rolled-in scale may indicate descaling issues, roller contamination, or rolling-stage instability.",
+        "Pitted Surface": "Repeated pitted surface defects may indicate corrosion, local surface damage, or material wear before inspection.",
+        "Inclusion": "Repeated inclusions may indicate raw material contamination or impurity control problems.",
+        "Crazing": "Repeated crazing may indicate thermal stress, cooling inconsistency, or surface cracking behaviour.",
+        "Patches": "Repeated patches may indicate surface finishing inconsistency or coating/texture variation."
+    }
+    cause = mapping.get(top_defect, "Repeated defects suggest a process drift that should be checked by QA engineers.")
+
+    if top_count >= 3 or reject_rate >= 40:
+        priority = "High maintenance priority"
+    elif top_count == 2 or reject_rate >= 20:
+        priority = "Moderate maintenance priority"
+    else:
+        priority = "Low maintenance priority"
+
+    return f"{priority}: {top_defect} appeared most often ({top_count} time/s). {cause} Current reject rate is {reject_rate:.1f}%."
+
+
+def make_alert_message(row: dict) -> str:
+    return f"""Subject: VisionAlloy Alert - {row.get('Decision', 'Inspection')} for {row.get('Inspection ID', 'Unknown')}
+
+Inspection ID: {row.get('Inspection ID', 'Unknown')}
+Time: {row.get('Time', 'Unknown')}
+Decision: {row.get('Decision', 'Unknown')}
+Risk Level: {row.get('Risk Level', 'Unknown')}
+Quality Score: {row.get('Quality Score', 'Unknown')}/100
+Primary Defect: {row.get('Primary Defect', 'None')}
+Defects Detected: {row.get('Defects', 0)}
+Inference Time: {row.get('Inference Time', 0)}s
+
+Recommended action: Please review the inspection output and separate the affected product if the decision is REJECT or the risk level is High.
+"""
+
+
+def create_voice_beep() -> bytes:
+    """Generate a short WAV alert tone without external dependencies."""
+    sample_rate = 22050
+    duration = 0.35
+    freq = 880
+    n_samples = int(sample_rate * duration)
+    buffer = io.BytesIO()
+    with wave.open(buffer, 'wb') as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(sample_rate)
+        for i in range(n_samples):
+            value = int(32767 * 0.35 * math.sin(2 * math.pi * freq * i / sample_rate))
+            wav.writeframesraw(value.to_bytes(2, byteorder='little', signed=True))
+    buffer.seek(0)
+    return buffer.read()
+
+
+def predict_frame(frame_bgr, threshold):
+    """Run YOLO prediction on a video frame and return summary only."""
+    results = model.predict(source=frame_bgr, conf=threshold, save=False, verbose=False)
+    plotted = results[0].plot()
+    boxes = results[0].boxes
+    count = len(boxes)
+    avg_conf = 0.0
+    primary = "None"
+    if count > 0:
+        confs = [float(b.conf[0]) for b in boxes]
+        avg_conf = float(np.mean(confs))
+        best = boxes[int(np.argmax(confs))]
+        primary = fmt_name(model.names[int(best.cls[0])])
+    decision = "PASS" if count == 0 else "REJECT" if count >= 2 or avg_conf >= 0.70 else "REVIEW"
+    return plotted, count, avg_conf, primary, decision
+
 def run_detection(image, file_name, threshold):
     with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
         image.save(temp_file.name)
@@ -494,6 +643,10 @@ def run_detection(image, file_name, threshold):
             "Severity": sev,
             "Priority": priority_rank(sev, conf_score),
             "Box": f"({x1}, {y1}) - ({x2}, {y2})",
+            "X1": x1,
+            "Y1": y1,
+            "X2": x2,
+            "Y2": y2,
             "Description": DEFECT_DESCRIPTIONS.get(raw_key, "Surface defect detected."),
             "Recommendation": recommendation
         })
@@ -607,12 +760,15 @@ st.markdown("""
 # -----------------------------
 # Tabs
 # -----------------------------
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "🏭 Inspection Dashboard",
+    "🎥 Video Inspection",
     "📦 Batch Inspection",
     "📊 Model Performance",
     "🏢 Factory Analytics",
+    "🔥 Explainability",
     "🕒 Inspection History",
+    "🧠 Production Intelligence",
     "ℹ️ System Details"
 ])
 
@@ -814,7 +970,120 @@ with tab1:
         st.markdown("Crazing · Inclusion · Patches · Pitted Surface · Rolled-in Scale · Scratches")
         st.markdown("</div>", unsafe_allow_html=True)
 
+
 with tab2:
+    st.markdown("<div class='panel'><div class='panel-title'>Real-Time Video Inspection</div>", unsafe_allow_html=True)
+    st.write("Upload an MP4/AVI/MOV file to simulate production-line inspection. The app samples frames to keep Streamlit Cloud stable.")
+
+    video_file = st.file_uploader(
+        "Upload inspection video",
+        type=["mp4", "avi", "mov"],
+        accept_multiple_files=False,
+        key="video_inspection_upload"
+    )
+
+    frame_step = st.slider("Process every Nth frame", 5, 60, 15, 5)
+    max_frames = st.slider("Maximum processed frames", 5, 80, 25, 5)
+
+    if video_file is not None:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_video:
+            temp_video.write(video_file.read())
+            video_path = temp_video.name
+
+        cap = cv2.VideoCapture(video_path)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) if cap.isOpened() else 0
+        fps = cap.get(cv2.CAP_PROP_FPS) if cap.isOpened() else 0
+
+        st.video(video_file)
+        st.write(f"Video frames: **{total_frames}** | FPS: **{fps:.2f}**")
+
+        if st.button("Run Video Inspection", use_container_width=True):
+            summaries = []
+            preview_images = []
+            processed = 0
+            frame_idx = 0
+            progress = st.progress(0)
+
+            while cap.isOpened() and processed < max_frames:
+                ok, frame = cap.read()
+                if not ok:
+                    break
+
+                if frame_idx % frame_step == 0:
+                    plotted, count, avg_conf, primary, decision = predict_frame(frame, confidence_threshold)
+                    summaries.append({
+                        "Frame": frame_idx,
+                        "Decision": decision,
+                        "Defects": count,
+                        "Avg Confidence": round(avg_conf, 3),
+                        "Primary Defect": primary
+                    })
+                    if len(preview_images) < 4:
+                        preview_images.append(cv2.cvtColor(plotted, cv2.COLOR_BGR2RGB))
+                    processed += 1
+                    progress.progress(min(1.0, processed / max_frames))
+
+                frame_idx += 1
+
+            cap.release()
+            try:
+                os.remove(video_path)
+            except OSError:
+                pass
+
+            if summaries:
+                video_df = pd.DataFrame(summaries)
+                reject_rate = video_df["Decision"].eq("REJECT").mean() * 100
+                review_rate = video_df["Decision"].eq("REVIEW").mean() * 100
+                avg_defects = video_df["Defects"].mean()
+
+                v1, v2, v3, v4 = st.columns(4)
+                v1.metric("Processed Frames", len(video_df))
+                v2.metric("Reject Rate", f"{reject_rate:.1f}%")
+                v3.metric("Review Rate", f"{review_rate:.1f}%")
+                v4.metric("Avg Defects/Frame", f"{avg_defects:.2f}")
+
+                st.dataframe(video_df, use_container_width=True, hide_index=True)
+
+                c1, c2 = st.columns(2)
+                with c1:
+                    st.markdown("### Frame Decision Distribution")
+                    decision_counts = video_df["Decision"].value_counts().reset_index()
+                    decision_counts.columns = ["Decision", "Count"]
+                    st.bar_chart(decision_counts.set_index("Decision"), use_container_width=True)
+                with c2:
+                    st.markdown("### Defects Across Sampled Frames")
+                    st.line_chart(video_df.set_index("Frame")[["Defects"]], use_container_width=True)
+
+                st.markdown("### Sample Annotated Frames")
+                cols = st.columns(min(4, len(preview_images)))
+                for i, img in enumerate(preview_images):
+                    with cols[i % len(cols)]:
+                        st.image(img, caption=f"Sample {i+1}", use_container_width=True)
+
+                csv_buffer = io.StringIO()
+                video_df.to_csv(csv_buffer, index=False)
+                st.download_button(
+                    "⬇️ Download Video Inspection CSV",
+                    csv_buffer.getvalue(),
+                    file_name="visionalloy_video_inspection.csv",
+                    mime="text/csv",
+                    use_container_width=True
+                )
+            else:
+                st.warning("No frames were processed. Try a shorter video or lower the frame step.")
+        else:
+            cap.release()
+            try:
+                os.remove(video_path)
+            except OSError:
+                pass
+    else:
+        st.info("Upload a video to start frame-based inspection.")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with tab3:
     st.markdown("<div class='panel'><div class='panel-title'>Batch Inspection</div>", unsafe_allow_html=True)
     batch_files = st.file_uploader(
         "Upload multiple surface images",
@@ -871,7 +1140,7 @@ with tab2:
         st.info("Upload multiple images to run batch inspection.")
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tab3:
+with tab4:
     st.markdown("<div class='panel'><div class='panel-title'>Model Performance Dashboard</div>", unsafe_allow_html=True)
     st.dataframe(MODEL_RESULTS, use_container_width=True, hide_index=True)
 
@@ -886,7 +1155,7 @@ with tab3:
     st.success("Final selected model: YOLOv8s. It gives the strongest balance between localization accuracy and computational efficiency for the NEU surface defect dataset.")
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tab4:
+with tab5:
     st.markdown("<div class='panel'><div class='panel-title'>Factory Analytics</div>", unsafe_allow_html=True)
 
     if len(st.session_state.history) == 0:
@@ -944,7 +1213,70 @@ with tab4:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tab5:
+
+with tab6:
+    st.markdown("<div class='panel'><div class='panel-title'>Explainability and Defect Heatmaps</div>", unsafe_allow_html=True)
+    st.write("This module visualizes model attention using detected bounding-box regions. It is a practical inspection heatmap, not a full Grad-CAM implementation.")
+
+    explain_file = st.file_uploader(
+        "Upload image for explainability analysis",
+        type=["jpg", "jpeg", "png"],
+        accept_multiple_files=False,
+        key="explainability_upload"
+    )
+
+    if explain_file is not None:
+        explain_image = Image.open(explain_file).convert("RGB")
+        with st.spinner("Generating detection and explainability heatmap..."):
+            output_image, table, decision, inference_time, results, crops, inspection_id, quality_score, risk_level = run_detection(
+                explain_image,
+                getattr(explain_file, "name", "explainability_image"),
+                confidence_threshold
+            )
+            heatmap_img = create_region_heatmap(explain_image, table)
+            location_map = create_defect_location_map(table, explain_image.width, explain_image.height)
+
+        e1, e2, e3 = st.columns(3)
+        with e1:
+            st.caption("Original")
+            st.image(explain_image, use_container_width=True)
+        with e2:
+            st.caption("YOLO Detection")
+            st.image(output_image, use_container_width=True)
+        with e3:
+            st.caption("Explainability Heatmap")
+            st.image(heatmap_img, use_container_width=True)
+
+        h1, h2 = st.columns([1, 1])
+        with h1:
+            st.markdown("### Defect Location Map")
+            st.image(location_map, use_container_width=True)
+        with h2:
+            st.markdown("### Interpretation")
+            st.write(f"Inspection ID: `{inspection_id}`")
+            st.write(f"Decision: **{decision}**")
+            st.write(f"Quality Score: **{quality_score}/100**")
+            st.write(f"Risk Level: **{risk_level}**")
+            if table.empty:
+                st.success("No defect region was detected above the selected threshold.")
+            else:
+                st.dataframe(table[["Defect Class", "Confidence", "Severity", "Recommendation"]], use_container_width=True, hide_index=True)
+
+        heatmap_buffer = io.BytesIO()
+        heatmap_img.save(heatmap_buffer, format="PNG")
+        st.download_button(
+            "⬇️ Download Explainability Heatmap",
+            heatmap_buffer.getvalue(),
+            file_name=f"{inspection_id}_heatmap.png",
+            mime="image/png",
+            use_container_width=True
+        )
+    else:
+        st.info("Upload an image to generate an explainability heatmap.")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with tab7:
     st.markdown("<div class='panel'><div class='panel-title'>Inspection History</div>", unsafe_allow_html=True)
 
     if len(st.session_state.history) == 0:
@@ -981,7 +1313,91 @@ with tab5:
 
     st.markdown("</div>", unsafe_allow_html=True)
 
-with tab6:
+
+with tab8:
+    st.markdown("<div class='panel'><div class='panel-title'>Production Intelligence</div>", unsafe_allow_html=True)
+
+    history_df = pd.DataFrame(st.session_state.history) if len(st.session_state.history) > 0 else pd.DataFrame()
+
+    st.markdown("### Conveyor Belt Simulation")
+    if history_df.empty:
+        st.info("Run inspections first to populate the conveyor simulation.")
+        recent_rows = []
+    else:
+        recent_rows = history_df.tail(6).to_dict("records")
+
+    belt_html = "<div style='background:linear-gradient(90deg,#0f2238,#1e3a5f,#0f2238);border:1px solid rgba(56,189,248,.25);border-radius:22px;padding:18px;display:flex;gap:14px;overflow-x:auto;'>"
+    if not recent_rows:
+        for i in range(6):
+            belt_html += f"<div style='min-width:150px;height:90px;border-radius:16px;background:rgba(148,163,184,.14);border:1px dashed rgba(203,213,225,.25);display:flex;align-items:center;justify-content:center;color:#9fb4c9;font-weight:800;'>Waiting</div>"
+    else:
+        for row in recent_rows:
+            decision = row.get("Decision", "WAIT")
+            color = "#22c55e" if decision == "PASS" else "#f59e0b" if decision == "REVIEW" else "#ef4444"
+            belt_html += f"""
+            <div style='min-width:180px;border-radius:16px;background:rgba(7,17,31,.72);border:1px solid {color};padding:12px;'>
+                <div style='width:14px;height:14px;background:{color};border-radius:999px;box-shadow:0 0 16px {color};'></div>
+                <div style='font-size:13px;color:#dff5ff;font-weight:900;margin-top:10px;'>{row.get('Inspection ID','VA')}</div>
+                <div style='font-size:24px;color:{color};font-weight:900;'>{decision}</div>
+                <div style='font-size:12px;color:#9fb4c9;'>Score: {row.get('Quality Score','-')}/100</div>
+            </div>
+            """
+    belt_html += "</div>"
+    st.markdown(belt_html, unsafe_allow_html=True)
+
+    st.markdown("### Predictive Maintenance Insight")
+    insight = generate_predictive_maintenance_insight(history_df)
+    st.markdown(f"<div class='priority-card'>{insight}</div>", unsafe_allow_html=True)
+
+    st.markdown("### Threshold Auto-Optimization Suggestion")
+    if history_df.empty:
+        st.info("Not enough inspection history to suggest a threshold adjustment.")
+    else:
+        reject_rate = history_df["Decision"].eq("REJECT").mean() * 100 if "Decision" in history_df.columns else 0
+        avg_conf = history_df["Avg Confidence"].mean() if "Avg Confidence" in history_df.columns else 0
+        if reject_rate > 55 and avg_conf < 0.45:
+            suggestion = "False positives may be high. Consider increasing the confidence threshold by 0.05."
+        elif reject_rate < 10 and avg_conf > 0.70:
+            suggestion = "The system is conservative. If small defects are being missed, consider lowering the threshold by 0.05."
+        else:
+            suggestion = "Current threshold appears reasonable based on available inspection history."
+        st.write(suggestion)
+
+    st.markdown("### Operator Notes and Manual QA Review")
+    if "operator_notes" not in st.session_state:
+        st.session_state.operator_notes = {}
+
+    if history_df.empty:
+        st.info("No inspection records available for notes.")
+    else:
+        selected_id = st.selectbox("Select Inspection ID", history_df["Inspection ID"].tolist()[::-1])
+        current_note = st.session_state.operator_notes.get(selected_id, "")
+        note = st.text_area("Operator / QA note", value=current_note, height=120)
+        if st.button("Save QA Note", use_container_width=True):
+            st.session_state.operator_notes[selected_id] = note
+            st.success("QA note saved for this inspection.")
+
+    st.markdown("### Critical Alert Assistant")
+    if history_df.empty:
+        st.info("No alert can be generated yet.")
+    else:
+        latest = history_df.iloc[-1].to_dict()
+        alert_text = make_alert_message(latest)
+        st.text_area("Supervisor alert template", value=alert_text, height=230)
+        st.download_button(
+            "⬇️ Download Alert Message",
+            alert_text,
+            file_name=f"{latest.get('Inspection ID','visionalloy')}_alert.txt",
+            mime="text/plain",
+            use_container_width=True
+        )
+        if latest.get("Decision") == "REJECT" or latest.get("Risk Level") == "High":
+            st.audio(create_voice_beep(), format="audio/wav")
+            st.warning("Critical alert tone is available above for demo use.")
+
+    st.markdown("</div>", unsafe_allow_html=True)
+
+with tab9:
     st.markdown("<div class='panel'><div class='panel-title'>System Details</div>", unsafe_allow_html=True)
     st.markdown("""
     **VisionAlloy** is a vision-based automated inspection system for metallic surface defect detection.  
@@ -1000,6 +1416,12 @@ with tab6:
     4. Inspection ID for traceability  
     5. PDF inspection report export  
     6. Factory analytics dashboard
+    7. Video inspection module
+    8. Explainability heatmaps and defect-location map
+    9. Predictive maintenance insight
+    10. Conveyor belt simulation
+    11. Operator notes and manual QA review
+    12. Critical alert assistant and downloadable supervisor alert template
 
     **Workflow**  
     1. Upload or capture a surface image  
