@@ -1,208 +1,217 @@
-# VisionAlloy – Automated Surface Defect Detection System
+# VisionAlloy — Automated Surface Defect Inspection System
 
-## Project Overview
+<div align="center">
 
-VisionAlloy is an AI-powered automated surface defect detection system developed using deep learning and computer vision techniques. The project focuses on detecting and classifying steel surface defects using YOLOv8 object detection models trained on the NEU Surface Defect Dataset.
+![Python](https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python)
+![Streamlit](https://img.shields.io/badge/Streamlit-Industrial%20Dashboard-red?style=for-the-badge&logo=streamlit)
+![YOLOv8](https://img.shields.io/badge/YOLOv8-Object%20Detection-00C7B7?style=for-the-badge)
+![Computer Vision](https://img.shields.io/badge/Computer%20Vision-Industrial%20AI-orange?style=for-the-badge)
+![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)
 
-The system was designed to support industrial quality inspection processes by automatically identifying surface defects such as scratches, patches, crazing, inclusion, pitted surfaces, and rolled-in scale defects.
+### AI-Powered Industrial Surface Defect Detection Platform
 
-The project includes:
+Real-time metallic surface inspection using YOLOv8 object detection, intelligent quality assessment, industrial analytics, and automated inspection reporting.
 
-* Deep learning model development using YOLOv8
-* Object detection training and evaluation
-* AWS SageMaker-based model training
-* Streamlit-based graphical user interface (GUI)
-* GitHub deployment integration
-* Industrial-style automated inspection workflow
-
----
-
-# Objectives
-
-The main objectives of the project are:
-
-* Develop an automated defect detection system using deep learning
-* Compare different YOLOv8 architectures
-* Improve defect detection accuracy for industrial inspection
-* Build an interactive GUI for real-time predictions
-* Deploy the trained model using Streamlit Cloud
+</div>
 
 ---
 
-# Dataset Information
+# 📌 Overview
 
-## Dataset Used
+VisionAlloy is a deep learning-based industrial inspection system developed for automated metallic surface defect detection using computer vision and YOLOv8 object detection models.
 
-NEU Surface Defect Dataset
+The system replaces traditional manual inspection workflows with an AI-powered inspection dashboard capable of:
 
-## Dataset Type
+- Real-time defect localization
+- PASS / REVIEW / REJECT decisions
+- Surface quality scoring
+- Industrial defect analytics
+- Batch inspection workflows
+- Video inspection support
+- Explainable AI heatmaps
+- Predictive maintenance insights
+- Automated report generation
 
-Object Detection Dataset
+The project was developed using the **NEU Surface Defect Dataset** and deployed through a cinematic Streamlit industrial dashboard interface.
 
-## Number of Classes
+---
 
-6 defect classes:
+# 🏭 Supported Defect Classes
 
-1. Crazing
-2. Inclusion
-3. Patches
-4. Pitted Surface
-5. Rolled-in Scale
-6. Scratches
+| Defect Type | Description |
+|---|---|
+| Crazing | Fine crack-like surface defects |
+| Inclusion | Embedded foreign material defects |
+| Patches | Irregular textured surface regions |
+| Pitted Surface | Small holes and surface damage |
+| Rolled-in Scale | Rolling process surface marks |
+| Scratches | Linear abrasion-based defects |
 
-## Dataset Split
+---
 
-The dataset was manually divided into:
+# 🚀 Key Features
 
-* 70% Training
-* 15% Validation
-* 15% Testing
+## 🔎 AI-Based Defect Detection
+- YOLOv8s real-time object detection
+- Bounding box localization
+- Confidence score analysis
+- Multiple defect detection support
 
-## Dataset Structure
+---
+
+## 🏭 Industrial Inspection Dashboard
+- Cinematic industrial UI
+- Real-time inference metrics
+- PASS / REVIEW / REJECT decisions
+- Severity classification system
+
+---
+
+## 📊 Factory Analytics
+- Total inspections
+- Reject rate analysis
+- Defect trend visualization
+- Average inference time monitoring
+- Most common defect tracking
+
+---
+
+## 📦 Batch Inspection
+- Multiple image processing
+- Bulk quality inspection
+- Batch analytics generation
+- CSV report export
+
+---
+
+## 🎥 Video Inspection
+- MP4 video processing
+- Frame-by-frame defect detection
+- Real-time inspection workflow
+
+---
+
+## 🧠 Explainable AI Heatmaps
+- Visual attention mapping
+- Defect focus region visualization
+- Model interpretability support
+
+---
+
+## 🔥 Defect Heatmap Analytics
+- Surface defect distribution analysis
+- Frequent defect region visualization
+- Industrial quality trend analysis
+
+---
+
+## 🛠 Smart Recommendation Engine
+
+| Defect | Recommendation |
+|---|---|
+| Scratch | Surface polishing recommended |
+| Inclusion | Inspect raw material purity |
+| Pitted Surface | Check corrosion protection process |
+| Rolled-in Scale | Inspect rolling equipment alignment |
+
+---
+
+## ⚠ Predictive Maintenance Insights
+
+The system analyses recurring defects and predicts possible manufacturing issues:
+
+- Roller misalignment
+- Surface wear patterns
+- Material contamination risks
+- Process instability indicators
+
+---
+
+## 📄 PDF & CSV Report Export
+- Inspection report generation
+- Defect summary export
+- Industrial QA documentation
+
+---
+
+## 🗂 Inspection History Logging
+- Inspection ID tracking
+- Historical inspection records
+- Searchable inspection history
+- Analytics persistence
+
+---
+
+# 🧱 System Architecture
 
 ```text
-SplitDataset/
- ├── train/
- │    ├── images/
- │    └── labels/
- │
- ├── valid/
- │    ├── images/
- │    └── labels/
- │
- ├── test/
- │    ├── images/
- │    └── labels/
- │
- └── data.yaml
+Input Image / Video
+        ↓
+YOLOv8s Detection Engine
+        ↓
+Defect Localization
+        ↓
+Confidence Analysis
+        ↓
+Severity Classification
+        ↓
+PASS / REVIEW / REJECT Decision
+        ↓
+Industrial Analytics Dashboard
+        ↓
+Report Generation & Logging
 ```
 
 ---
 
-# Model Architectures
+# 🧠 Deep Learning Model
 
-Three YOLOv8 architectures were evaluated:
+| Model | Precision | Recall | mAP50 | mAP50-95 |
+|---|---|---|---|---|
+| YOLOv8n | 0.548 | 0.635 | 0.663 | 0.345 |
+| YOLOv8s | 0.770 | 0.866 | 0.876 | 0.559 |
+| YOLOv8m | 0.722 | 0.727 | 0.787 | 0.455 |
 
-| Model   | Description                                              |
-| ------- | -------------------------------------------------------- |
-| YOLOv8n | Nano version with lightweight architecture               |
-| YOLOv8s | Small version with balanced performance                  |
-| YOLOv8m | Medium version with larger feature extraction capability |
+### Final Selected Model: YOLOv8s
 
----
-
-# Experimental Settings
-
-| Parameter               | Setting            |
-| ----------------------- | ------------------ |
-| Task Type               | Object Detection   |
-| Image Size              | 640 × 640          |
-| Epochs                  | 200                |
-| Optimizer               | AdamW              |
-| Early Stopping          | Enabled            |
-| Early Stopping Patience | 25                 |
-| Confidence Threshold    | 0.25               |
-| Framework               | Ultralytics YOLOv8 |
-| Training Platform       | AWS SageMaker      |
-| GUI Framework           | Streamlit          |
+YOLOv8s achieved the best balance between:
+- localization accuracy
+- computational efficiency
+- real-time inference performance
 
 ---
 
-# Model Performance
-
-| CNN Architecture | Train Accuracy | Validation Accuracy | Test Accuracy |
-| ---------------- | -------------: | ------------------: | ------------: |
-| YOLOv8n          |         67.90% |              67.68% |        66.26% |
-| YOLOv8s          |         87.40% |              84.58% |        87.56% |
-| YOLOv8m          |         78.85% |              77.84% |        78.71% |
-
-## Best Model
-
-YOLOv8s achieved the highest overall performance and provided the best balance between detection accuracy and computational efficiency.
-
----
-
-# Technologies Used
-
-## Programming Language
-
-* Python
-
-## Deep Learning Frameworks
-
-* PyTorch
-* Ultralytics YOLOv8
-
-## Libraries
-
-* OpenCV
-* NumPy
-* Pandas
-* Pillow
-* Matplotlib
-* Streamlit
-
-## Development Environment
-
-* AWS SageMaker
-* Jupyter Notebook
-* GitHub
-
----
-
-# Project Structure
+# 📂 Project Structure
 
 ```text
 VisionAlloy/
- ├── app.py
- ├── requirements.txt
- ├── runtime.txt
- ├── best.pt
- ├── README.md
- ├── SplitDataset/
- │    ├── train/
- │    ├── valid/
- │    └── test/
- │
- ├── runs/
- │    └── detect/
- │
- └── notebooks/
-      └── Main.ipynb
+│
+├── app.py
+├── best.pt
+├── requirements.txt
+├── runtime.txt
+├── README.md
+│
+├── assets/
+├── reports/
+├── outputs/
+└── sample_images/
 ```
 
 ---
 
-# GUI Features
+# ⚙️ Installation
 
-The project includes a Streamlit-based GUI for real-time surface defect inspection.
-
-## GUI Capabilities
-
-* Upload steel surface images
-* Perform real-time defect detection
-* Adjustable confidence threshold
-* Defect classification table
-* PASS/REJECT inspection decision
-* Visual bounding box predictions
-
----
-
-# Installation Guide
-
-## Clone Repository
+## 1. Clone Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/VisionAlloy.git
-```
-
-## Navigate to Project Folder
-
-```bash
+git clone https://github.com/your-username/VisionAlloy.git
 cd VisionAlloy
 ```
 
-## Install Dependencies
+---
+
+## 2. Install Requirements
 
 ```bash
 pip install -r requirements.txt
@@ -210,85 +219,141 @@ pip install -r requirements.txt
 
 ---
 
-# Running the Application
-
-## Launch Streamlit GUI
+## 3. Run Application
 
 ```bash
 streamlit run app.py
 ```
 
-The application will open in:
+---
+
+# 📦 Requirements
 
 ```text
-http://localhost:8501
+streamlit
+ultralytics
+opencv-python-headless
+torch
+torchvision
+numpy
+pandas
+pillow
+matplotlib
+reportlab
 ```
 
 ---
 
-# Model Prediction Workflow
+# 🌐 Streamlit Cloud Deployment
 
-1. User uploads a steel surface image
-2. Streamlit GUI receives image input
-3. YOLOv8 model performs object detection
-4. Defects are identified and classified
-5. Bounding boxes are generated
-6. PASS/REJECT decision is displayed
-7. Detection results are shown in the GUI
+Create `runtime.txt`
 
----
+```text
+python-3.11
+```
 
-# Example Defects Detected
-
-The system can detect:
-
-* Surface scratches
-* Inclusion defects
-* Pitted surfaces
-* Rolled-in scale defects
-* Surface patches
-* Crazing cracks
+Then deploy directly from GitHub using Streamlit Cloud.
 
 ---
 
-# Deployment
+# 📸 Dashboard Modules
 
-The project was deployed using:
+## 🏭 Inspection Dashboard
+Single-image defect inspection and quality evaluation.
 
-* GitHub Repository
-* Streamlit Community Cloud
+## 📦 Batch Inspection
+Large-scale industrial quality inspection workflows.
 
-The deployment uses the trained YOLOv8s model generated in AWS SageMaker.
+## 📊 Factory Analytics
+Production monitoring and industrial statistics.
 
----
+## 🎥 Video Inspection
+Continuous frame-based surface inspection.
 
-# Challenges Faced
+## 🧠 Explainability Dashboard
+AI heatmap visualization and model interpretation.
 
-Several challenges were encountered during development:
-
-* AWS SageMaker proxy limitations
-* Model deployment integration
-* Streamlit cloud dependency compatibility
-* Dataset restructuring for train/validation/test splitting
-* GPU memory limitations for larger YOLO models
-
----
-
-# Future Improvements
-
-Potential future improvements include:
-
-* Real-time webcam inspection
-* Industrial camera integration
-* Edge device deployment
-* Faster inference optimization
-* Multi-material surface inspection
-* Advanced defect severity estimation
+## 🕒 Inspection History
+Inspection tracking and analytics logging.
 
 ---
 
-# Conclusion
+# 📈 Dataset Information
 
-VisionAlloy successfully demonstrates the effectiveness of deep learning-based object detection for industrial steel surface inspection. The YOLOv8-based system achieved strong detection performance while providing an easy-to-use graphical interface for real-time defect inspection.
+### Dataset
+NEU Surface Defect Dataset
 
-The project highlights how AI and computer vision can improve industrial quality assurance processes by reducing manual inspection effort and increasing defect detection consistency.
+### Classes
+6 defect categories
+
+### Total Images
+1,800 images
+
+### Image Resolution
+200 × 200
+
+### Training Split
+- 70% Training
+- 15% Validation
+- 15% Testing
+
+---
+
+# 🔬 Technologies Used
+
+| Technology | Purpose |
+|---|---|
+| Python | Core development |
+| YOLOv8 | Object detection |
+| Streamlit | Dashboard interface |
+| OpenCV | Image processing |
+| PyTorch | Deep learning |
+| Pandas | Data analysis |
+| NumPy | Numerical operations |
+
+---
+
+# ⚠️ Limitations
+
+- Sensitive to extreme lighting variations
+- Reflective metallic textures may cause false positives
+- Limited dataset diversity
+- Real-world industrial environments may contain unseen defect patterns
+
+---
+
+# 🔮 Future Improvements
+
+- Edge AI deployment
+- Live industrial camera integration
+- Advanced Grad-CAM explainability
+- Cloud database synchronization
+- Industrial IoT integration
+- Real-time conveyor belt monitoring
+
+---
+
+# 👨‍💻 Team VisionAlloy
+
+| Team Member | Contribution |
+|---|---|
+| Sri Sai Hemanth Bollepalli | GUI, deployment, analytics, system integration |
+| Harshitha Kolgatta Swamy | YOLO experimentation and model evaluation |
+| Meet Jobanputra | Data engineering and backend integration |
+
+---
+
+# 📜 License
+
+This project was developed for academic and research purposes.
+
+---
+
+<div align="center">
+
+### VisionAlloy  
+### Intelligent Industrial Surface Inspection Platform
+
+Built with Deep Learning • Computer Vision • Industrial AI
+
+</div>
