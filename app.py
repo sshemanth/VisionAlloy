@@ -666,9 +666,19 @@ with tab4:
         st.dataframe(history_df, use_container_width=True, hide_index=True)
 
         col_a, col_b = st.columns(2)
-        with col_a:
-            st.markdown("### Decision Trend")
-            st.bar_chart(history_df["Decision"].value_counts().reset_index().rename(columns={"index": "Decision", "Decision": "Count"}).set_index("Decision"))
+       with col_a:
+    st.markdown("### Decision Trend")
+
+    if "Decision" in history_df.columns and not history_df.empty:
+        decision_counts = history_df["Decision"].value_counts().reset_index()
+        decision_counts.columns = ["Decision", "Count"]
+
+        st.bar_chart(
+            decision_counts.set_index("Decision"),
+            use_container_width=True
+        )
+    else:
+        st.info("No inspection decision data available yet.")
         with col_b:
             st.markdown("### Inference Time")
             st.line_chart(history_df[["Inference Time"]])
