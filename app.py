@@ -659,32 +659,54 @@ with tab3:
 
 with tab4:
     st.markdown("<div class='panel'><div class='panel-title'>Inspection History</div>", unsafe_allow_html=True)
+
     if len(st.session_state.history) == 0:
         st.info("No inspections completed yet.")
+
     else:
         history_df = pd.DataFrame(st.session_state.history)
-        st.dataframe(history_df, use_container_width=True, hide_index=True)
+
+        st.dataframe(
+            history_df,
+            use_container_width=True,
+            hide_index=True
+        )
 
         col_a, col_b = st.columns(2)
-       with col_a:
-    st.markdown("### Decision Trend")
 
-    if "Decision" in history_df.columns and not history_df.empty:
-        decision_counts = history_df["Decision"].value_counts().reset_index()
-        decision_counts.columns = ["Decision", "Count"]
+        with col_a:
+            st.markdown("### Decision Trend")
 
-        st.bar_chart(
-            decision_counts.set_index("Decision"),
-            use_container_width=True
-        )
-    else:
-        st.info("No inspection decision data available yet.")
+            if "Decision" in history_df.columns and not history_df.empty:
+
+                decision_counts = (
+                    history_df["Decision"]
+                    .value_counts()
+                    .reset_index()
+                )
+
+                decision_counts.columns = ["Decision", "Count"]
+
+                st.bar_chart(
+                    decision_counts.set_index("Decision"),
+                    use_container_width=True
+                )
+
+            else:
+                st.info("No inspection decision data available yet.")
+
         with col_b:
             st.markdown("### Inference Time")
-            st.line_chart(history_df[["Inference Time"]])
+
+            st.line_chart(
+                history_df[["Inference Time"]],
+                use_container_width=True
+            )
 
         csv_buffer = io.StringIO()
+
         history_df.to_csv(csv_buffer, index=False)
+
         st.download_button(
             "⬇️ Download History CSV",
             csv_buffer.getvalue(),
@@ -692,6 +714,7 @@ with tab4:
             mime="text/csv",
             use_container_width=True
         )
+
     st.markdown("</div>", unsafe_allow_html=True)
 
 with tab5:
