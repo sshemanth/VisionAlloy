@@ -1,111 +1,49 @@
-# VisionAlloy — Automated Surface Defect Inspection System
+# 🏭 Automated Surface Defect Inspection System
 
 <div align="center">
 
 ![Python](https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python)
-![Streamlit](https://img.shields.io/badge/Streamlit-Industrial%20Dashboard-red?style=for-the-badge&logo=streamlit)
 ![YOLOv8](https://img.shields.io/badge/YOLOv8-Object%20Detection-00C7B7?style=for-the-badge)
 ![Computer Vision](https://img.shields.io/badge/Computer%20Vision-Industrial%20AI-orange?style=for-the-badge)
-![Status](https://img.shields.io/badge/Status-Production%20Ready-success?style=for-the-badge)
-
-### AI-Powered Industrial Surface Defect Detection Platform
-
-Real-time metallic surface inspection using YOLOv8 object detection, intelligent quality assessment, industrial analytics, and automated inspection reporting.
 
 </div>
 
 ---
 
-# 📌 Overview
+## 📌 Overview
 
-VisionAlloy is a deep learning-based industrial inspection system developed for automated metallic surface defect detection using computer vision and YOLOv8 object detection models.
+This project is an end-to-end, deep learning-based industrial inspection system designed to automate metallic surface defect detection using state-of-the-art computer vision models. 
 
-The system replaces traditional manual inspection workflows with an AI-powered inspection dashboard capable of:
+By replacing manual, error-prone visual inspection workflows with an optimized **YOLOv8 pipeline**, the system delivers millisecond-level inference alongside actionable manufacturing analytics. The entire engine is wrapped in a high-fidelity, cinematic Streamlit industrial dashboard built for production operators and quality assurance managers alike.
 
-- Real-time defect localization
-- PASS / REVIEW / REJECT decisions
-- Surface quality scoring
-- Industrial defect analytics
-- Batch inspection workflows
-- Video inspection support
-- Explainable AI heatmaps
-- Predictive maintenance insights
-- Automated report generation
-
-The project was developed using the **NEU Surface Defect Dataset** and deployed through a cinematic Streamlit industrial dashboard interface.
+> **Dataset Note:** Trained and validated using the industry-standard **NEU Surface Defect Dataset**.
 
 ---
 
-# 🏭 Supported Defect Classes
+## 🚀 Key Features
 
-| Defect Type | Description |
-|---|---|
-| Crazing | Fine crack-like surface defects |
-| Inclusion | Embedded foreign material defects |
-| Patches | Irregular textured surface regions |
-| Pitted Surface | Small holes and surface damage |
-| Rolled-in Scale | Rolling process surface marks |
-| Scratches | Linear abrasion-based defects |
-
-# ⚙️ Installation
-
-## 1. Clone Repository
-
-```bash
-git clone https://github.com/your-username/VisionAlloy.git
-cd VisionAlloy
-```
+* **Real-Time Bounding Box Localization:** High-accuracy defect tracking powered by YOLOv8.
+* **Automated Quality Decisions:** Instant sorting logic marking materials as `PASS`, `REVIEW`, or `REJECT`.
+* **Dynamic Quality Scoring:** Algorithmic calculation of surface integrity based on defect density and severity.
+* **Batch & Video Workflows:** Support for high-throughput image batches and continuous video streams.
+* **Explainable AI (XAI):** Built-in heatmaps highlighting regions of interest for deep validation.
+* **Industrial PDF Reporting:** Instant, automated generation of quality assurance reports via ReportLab.
 
 ---
 
-## 2. Install Requirements
+## 🏭 Supported Defect Classes
 
-```bash
-pip install -r requirements.txt
-```
+The system is rigorously trained to segment and identify six core industrial metallic defects:
 
----
+| Defect Type | Code | Description | Severity Threshold |
+| :--- | :--- | :--- | :--- |
+| **Crazing** | `Cr` | Fine, network-like surface cracking from thermal stress. | Medium |
+| **Inclusion** | `In` | Foreign non-metallic matter embedded into the metal matrix. | High |
+| **Patches** | `Pa` | Irregularly textured surface regions affecting coating adhesion. | Low |
+| **Pitted Surface** | `Ps` | Small localized cavities or holes resulting from corrosion or wear. | High |
+| **Rolled-in Scale** | `Rs` | Heavy mill scale pressed into the metal during rolling. | Medium |
+| **Scratches** | `Sc` | Linear mechanical abrasions undermining structural finish. | Low / Medium |
 
-## 3. Run Application
 
-```bash
+
 streamlit run app.py
-```
-
----
-
-# 📦 Requirements
-
-```text
-streamlit
-ultralytics
-opencv-python-headless
-torch
-torchvision
-numpy
-pandas
-pillow
-matplotlib
-reportlab
-```
-
----
-
-# 🌐 Streamlit Cloud Deployment
-
-Create `runtime.txt`
-
-```text
-python-3.11
-```
-
-Then deploy directly from GitHub using Streamlit Cloud.
-
-# 🔮 Future Improvements
-
-- Edge AI deployment
-- Live industrial camera integration
-- Advanced Grad-CAM explainability
-- Cloud database synchronization
-- Industrial IoT integration
-- Real-time conveyor belt monitoring
