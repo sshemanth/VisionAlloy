@@ -43,7 +43,3 @@ The system is rigorously trained to segment and identify six core industrial met
 | **Pitted Surface** | `Ps` | Small localized cavities or holes resulting from corrosion or wear. | High |
 | **Rolled-in Scale** | `Rs` | Heavy mill scale pressed into the metal during rolling. | Medium |
 | **Scratches** | `Sc` | Linear mechanical abrasions undermining structural finish. | Low / Medium |
-
-
-
-streamlit run app.py
